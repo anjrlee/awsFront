@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 from datetime import datetime
 import base64
-import json
+
 
 # Load .env
 
@@ -206,6 +206,21 @@ def root():
 #         print(f"Error: {str(e)}")
 #         return jsonify({"server error": str(e)}), 500
 
+def handleChatResponse(response):
+    output=""
+    print("output1",response)
+    for event in response['responseStream']:
+        output=event['flowOutputEvent']['content']['document']
+        break
+        #output = json.loads(output)
+    print("output=",output)
+   
+    return jsonify({
+        'response': output,
+        'status': 'Flow execution succeeded'
+    }), 200
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"})
@@ -245,8 +260,36 @@ def chat():
         for event in event_stream:
             output=event['flowOutputEvent']['content']['document']
             break
-        output = json.loads(output)
+        #output = json.loads(output)
         print(output)
+        obj = json.loads(output.strip('`').strip('json').strip())
+        print(obj)
+        print(obj['answerable'])
+        if not obj['answerable']:
+            return jsonify({
+                'response': "目前收到的輸入不符合預期格式/內容，請重新輸入，謝謝您！",
+                'status': 'Flow execution succeeded'
+            }), 200
+        else:
+            user_input="/n".join(obj['answerable'])
+            response = bedrock_runtime_client.invoke_flow(
+                flowIdentifier="NPUEQ646G3",        # Flow ID
+                flowAliasIdentifier="1VKEITWEXH",   # ✅ 使用 alias ID，而非 alias 名稱
+                inputs = [
+                    {
+                        "nodeName": "FlowInputNode",       # FlowInput 節點固定是這個名稱
+                        "nodeOutputName": "document",         # ✅ 這才是你 FlowInput 的輸出名稱
+                        "content": {
+                            "document": user_input
+
+                        }
+                    }
+                ]
+
+            )
+            return handleChatResponse(response)
+
+            
         return jsonify({
             'response': output,
             'status': 'Flow execution succeeded'
