@@ -1,18 +1,24 @@
 #!/bin/bash
 
-# Make the script executable
-# chmod +x /workspace/start.sh
+# === Python 虛擬環境設定 ===
+if [ ! -d "venv" ]; then
+    echo "Creating Python virtual environment..."
+    python3 -m venv venv
+fi
 
-# Check for .env file and source it if it exists
-if [ -f /.env ]; then
+echo "Activating virtual environment..."
+source venv/bin/activate
+
+# === 載入 .env 環境變數（若存在） ===
+if [ -f .env ]; then
     echo "Loading environment variables from .env file..."
-    export $(grep -v '^#' /workspace/.env | xargs)
+    export $(grep -v '^#' .env | xargs)
 else
-    echo "No .env file found. Please create one based on .env.example if you need to set environment variables."
+    echo "No .env file found. Please create one based on .env.example if needed."
     echo "Continuing with default or system environment variables..."
 fi
 
-# Check if we should run the environment test
+# === 執行環境測試 ===
 if [ "$1" = "test-env" ]; then
     echo "Running environment variable test..."
     cd backend
@@ -21,45 +27,43 @@ if [ "$1" = "test-env" ]; then
     exit $?
 fi
 
-# Install backend dependencies
+# === 安裝後端依賴 ===
 echo "Installing backend dependencies..."
 cd backend
 pip install -r requirements.txt
 
-# Install frontend dependencies (if needed)
+# === 安裝前端依賴（可加檢查）===
 echo "Setting up frontend..."
 cd ..
 
-# Start backend server in the background
+# === 啟動後端服務 ===
 echo "Starting backend server..."
 cd backend
 python3 app.py &
 BACKEND_PID=$!
 
-# Start frontend server in the background
+# === 啟動前端服務 ===
 echo "Starting frontend server..."
 cd ../frontend
 node server.js &
 FRONTEND_PID=$!
 
+# === 顯示運行狀態 ===
 echo "Servers started!"
 echo "Frontend is running at: http://localhost:8080"
 echo "Backend is running at: http://localhost:5000"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 
-# Function to kill both servers on exit
+# === 清理程序 ===
 function cleanup {
     echo "Stopping servers..."
     kill $BACKEND_PID
     kill $FRONTEND_PID
+    deactivate
     exit 0
 }
-
-# Set up trap to catch Ctrl+C
 trap cleanup SIGINT
 
-# Keep the script running
+# === 保持前景程序運行中 ===
 wait
-
-
