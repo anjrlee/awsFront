@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
-        const sendPromise = fetch('http://localhost:5000/api/chat', {
+        const sendPromise = fetch('http://52.38.107.126:5000/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
