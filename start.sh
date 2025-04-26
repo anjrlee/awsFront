@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Make the script executable
-chmod +x /workspace/start.sh
+# chmod +x /workspace/start.sh
 
 # Check for .env file and source it if it exists
 if [ -f /.env ]; then
