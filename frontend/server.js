@@ -16,7 +16,7 @@ const MIME_TYPES = {
     '.ico': 'image/x-icon',
 };
 
-const server = https.createServer((req, res) => {
+const server = http.createServer((req, res) => {
     console.log(`${req.method} ${req.url}`);
     
     // Normalize URL by removing query string and trailing slash
