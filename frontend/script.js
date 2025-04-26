@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
-            const response = await fetch('http://52.38.107.126:5000/api/deleteVectorDB', {
+            const response = await fetch('https://52.38.107.126:5000/api/deleteVectorDB', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
-        const sendPromise = fetch('http://52.38.107.126:5000/api/chat', {
+        const sendPromise = fetch('https://52.38.107.126:5000/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         sendButton.disabled = true;
         try {
-            await fetch('http://localhost:5000/api/upload', {
+            await fetch('https://localhost:5000/api/upload', {
                 method: 'POST',
                 body: formData
             });
