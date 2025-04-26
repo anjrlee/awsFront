@@ -5,14 +5,44 @@ import os
 import json
 from dotenv import load_dotenv
 import uuid
+import matplotlib.pyplot as plt
+import numpy as np
+from PIL import Image
+from datetime import datetime
+import base64
 
 # Load .env
+
 load_dotenv()
+
 
 S3_BUCKET = os.getenv('S3_BUCKET_NAME')
 BEDROCK_KB_ID = os.getenv('BEDROCK_KB_ID')
 REGION = os.getenv('AWS_REGION')
 BEDROCK_DATASOURCE_ID = os.getenv('BEDROCK_DATASOURCE_ID')
+REGION = os.getenv('AWS_REGION')
+
+
+
+
+code_string = """
+x = np.linspace(0, 10, 100)
+y = np.sin(x)
+plt.plot(x, y)
+plt.title("Sine Wave")
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.grid(True)
+
+"""
+
+client = boto3.client(
+    "bedrock-runtime",
+    region_name=REGION,
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+)
+
 
 
 # 初始化 Bedrock Agent Runtime client
@@ -25,6 +55,59 @@ bedrock_runtime_client = boto3.client(
 app = Flask(__name__)
 CORS(app)
 # Get AWS credentials from environment variables
+from datetime import datetime
+import matplotlib.pyplot as plt
+from PIL import Image
+
+
+def img2txt(encoded_image):
+
+    # Create Claude prompt
+    claude_input = {
+        "anthropic_version": "bedrock-2023-05-31",  # Add this required parameter
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": encoded_image,
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": "請幫我萃取這張圖中的所有文字，回傳純文字即可。",
+                    }
+                ]
+            }
+        ],
+        "max_tokens": 1024,
+    }
+
+    # Model ID depends on the version you enabled
+    response = client.invoke_model(
+        modelId="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        body=json.dumps(claude_input),
+        contentType="application/json",
+        accept="application/json"
+    )
+
+    # Parse response
+    response_body = json.loads(response["body"].read())
+    extracted_text = response_body["content"][0]["text"]
+    #print("圖片中的文字：")
+    return extracted_text
+
+def draw_and_save(code_string):
+    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+    filename = "./img/img_" + timestamp  # 檔案名
+    save_code = f'plt.savefig("{filename}.png")\n'  # 使用 f-string 確保正確格式
+    exec(code_string + save_code)
+    img = Image.open(f"{filename}.png")
+    return img
 
 
 
@@ -44,31 +127,17 @@ def ingest_to_knowledge_base(s3_uri):
 
 @app.route('/api/upload', methods=['POST'])
 def upload_txt_to_bedrock():
+
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-
-    filename = f"{uuid.uuid4()}.txt"
-
-    try:
-        s3_uri = upload_to_s3(file, filename)
-        print("DEBUG: S3 URI =", s3_uri)
-        
-        job_id = ingest_to_knowledge_base(s3_uri)
-        print("DEBUG: Ingestion Job ID =", job_id)
-
-        return jsonify({
-            'message': 'Upload successful',
-            's3_uri': s3_uri,
-            'ingestion_job_id': job_id
-        })
-
-    except Exception as e:
-        print("ERROR:", e)
-        return jsonify({'error': 'Upload failed', 'detail': str(e)}), 500
+    file_bytes = file.read()
+    encoded_image = base64.b64encode(file_bytes).decode("utf-8")
+    #print("succeed")
+    #print(img2txt(encoded_image))
+    return img2txt(encoded_image)
+    #post img2txt(file)
 
 
 def clear_s3_bucket():
