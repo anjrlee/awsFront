@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         sendButton.disabled = true;
         try {
-            await fetch('https://localhost:5000/api/upload', {
+            await fetch('https://52.38.107.126:5000/api/upload', {
                 method: 'POST',
                 body: formData
             });
