@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
-            const response = await fetch('https://steel.hayu90.com:5000/api/deleteVectorDB', {
+            const response = await fetch('/api/deleteVectorDB', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
-        const sendPromise = fetch('https://steel.hayu90.com:5000/api/chat', {
+        const sendPromise = fetch('/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         sendButton.disabled = true;
         try {
-            await fetch('https://steel.hayu90.com/:5000/api/upload', {
+            await fetch('/api/upload', {
                 method: 'POST',
                 body: formData
             });
