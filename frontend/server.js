@@ -1,4 +1,4 @@
-const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
@@ -60,5 +60,5 @@ const server = https.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Frontend server running at https://localhost:${PORT}/`);
+    console.log(`Frontend server running at http://localhost:${PORT}/`);
 });
