@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image
 from datetime import datetime
 import base64
+import json
 
 # Load .env
 
@@ -221,14 +222,15 @@ def chat():
             print("Missing 'inputs' in request")
             return jsonify({"error": "Missing 'message' in request"}), 400
         response = bedrock_runtime_client.invoke_flow(
-            flowIdentifier="Z15IBK17JY",        # Flow ID
-            flowAliasIdentifier="6NNORYDLV9",   # ✅ 使用 alias ID，而非 alias 名稱
+            flowIdentifier="IQJ5LIPWZU",        # Flow ID
+            flowAliasIdentifier="SSEL19PR33",   # ✅ 使用 alias ID，而非 alias 名稱
             inputs = [
                 {
                     "nodeName": "FlowInputNode",       # FlowInput 節點固定是這個名稱
                     "nodeOutputName": "document",         # ✅ 這才是你 FlowInput 的輸出名稱
                     "content": {
                         "document": user_input
+
                     }
                 }
             ]
@@ -243,6 +245,8 @@ def chat():
         for event in event_stream:
             output=event['flowOutputEvent']['content']['document']
             break
+        output = json.loads(output)
+        print(output)
         return jsonify({
             'response': output,
             'status': 'Flow execution succeeded'
