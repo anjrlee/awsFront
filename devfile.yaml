@@ -1,0 +1,24 @@
+schemaVersion: 2.0.0
+metadata:
+  name: python-node-app
+  version: 1.0.0
+  displayName: Python Flask and Node.js Application
+  description: Development environment for a Python Flask backend and Node.js frontend application
+components:
+  - name: dev
+    container:
+      image: public.ecr.aws/aws-mde/universal-image:latest
+      mountSources: true
+commands:
+  - id: install
+    exec:
+      component: dev
+      commandLine: "cd ${PROJECT_SOURCE}/backend && pip install -r requirements.txt && cd ${PROJECT_SOURCE}/frontend && echo 'Frontend dependencies installed'"
+  - id: build
+    exec:
+      component: dev
+      commandLine: "echo 'Building project...' && cd ${PROJECT_SOURCE}/backend && echo 'Backend built' && cd ${PROJECT_SOURCE}/frontend && echo 'Frontend built'"
+  - id: test
+    exec:
+      component: dev
+      commandLine: "echo 'Running tests...' && cd ${PROJECT_SOURCE}/backend && echo 'Backend tests completed' && cd ${PROJECT_SOURCE}/frontend && echo 'Frontend tests completed'"
