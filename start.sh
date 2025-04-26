@@ -12,7 +12,17 @@ source venv/bin/activate || { echo "❌ Failed to activate venv"; exit 1; }
 # === 載入 .env 環境變數（若存在） ===
 if [ -f .env ]; then
     echo "Loading environment variables from .env file..."
-    export $(grep -v '^#' .env | xargs)
+    # More robust env loading - only export valid KEY=VALUE pairs
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # Skip comments and empty lines
+        [[ "$line" =~ ^#.*$ ]] || [[ -z "$line" ]] && continue
+        # Check if line contains proper KEY=VALUE format
+        if [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+            export "$line"
+        else
+            echo "⚠️ Warning: Ignoring invalid environment variable: $line"
+        fi
+    done < .env
 else
     echo "No .env file found. Please create one based on .env.example if needed."
     echo "Continuing with default or system environment variables..."
@@ -35,6 +45,15 @@ pip install -r requirements.txt || { echo "❌ Failed to install backend depende
 # === 安裝前端依賴 ===
 echo "Setting up frontend..."
 cd ../frontend || exit 1
+
+# Check if frontend directory is properly set up
+if [ ! -f "package.json" ]; then
+    echo "❌ Error: package.json not found in frontend directory"
+    echo "Please make sure the frontend directory is correctly set up."
+    echo "Create package.json or clone the frontend repository first."
+    exit 1
+fi
+
 if [ ! -d "node_modules" ]; then
     echo "Installing frontend dependencies..."
     npm install || { echo "❌ npm install failed"; exit 1; }
