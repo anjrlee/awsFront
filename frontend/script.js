@@ -245,9 +245,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to send message to backend
     async function sendMessage(message) {
+        
         try {
             showTypingIndicator();
-            console.log(message);
             const response = await fetch('http://localhost:5000/api/chat', {
                 method: 'POST',
                 headers: {

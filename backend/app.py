@@ -81,30 +81,38 @@ def health_check():
 @app.route('/api/chat', methods=['POST'])
 def chat():
     try:
-        user_input = request.json.get('inputs')
+        data = request.json
+        user_input = data.get('message', '')
+        #print("data=",user_message)
+        #user_input = request.json.get('inputs')
         if not user_input:
             print("Missing 'inputs' in request")
             return jsonify({"error": "Missing 'message' in request"}), 400
-
-        inputs = [
-            {
-                "nodeName": "haha",                 # Flow 中的 Prompts 節點名稱
-                "nodeOutputName": "default",        # 預設 output 名稱
-                "content": {
-                    "document": user_input          # Flow 要求的是 document，不是 token！
-                }
-            }
-        ]
-
         response = bedrock_runtime_client.invoke_flow(
-            flowIdentifier="NPUEQ646G3",        # Flow ID
-            flowAliasIdentifier="1VKEITWEXH",   # ✅ 使用 alias ID，而非 alias 名稱
-            inputs=inputs
+            flowIdentifier="Z15IBK17JY",        # Flow ID
+            flowAliasIdentifier="6NNORYDLV9",   # ✅ 使用 alias ID，而非 alias 名稱
+            inputs = [
+                {
+                    "nodeName": "FlowInputNode",       # FlowInput 節點固定是這個名稱
+                    "nodeOutputName": "document",         # ✅ 這才是你 FlowInput 的輸出名稱
+                    "content": {
+                        "document": user_input
+                    }
+                }
+            ]
+
         )
 
-
+        #print("response",response)
+        event_stream = response['responseStream']
+        output=""
+        #print(type(event_stream))
+        
+        for event in event_stream:
+            output=event['flowOutputEvent']['content']['document']
+            break
         return jsonify({
-            'response': response.get('output', {}),
+            'response': output,
             'status': 'Flow execution succeeded'
         }), 200
 
