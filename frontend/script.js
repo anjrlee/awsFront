@@ -418,7 +418,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function initSpeechRecognition() {
         // Check if browser supports speech recognition
         if ('webkitSpeechRecognition' in window) {
-            recognition = new webkitSpeechRecognition();
+            recognition = new 
+            ();
             recognition.continuous = true;
             recognition.interimResults = true;
             
