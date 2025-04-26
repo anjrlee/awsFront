@@ -4,7 +4,7 @@ import boto3
 import os
 import json
 from dotenv import load_dotenv
-
+import transform
 # Load .env
 load_dotenv()
 
@@ -41,11 +41,11 @@ def upload_txt_to_bedrock():
         return jsonify({'error': 'No file part'}), 400
 
     file = request.files['file']
+    
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    filename = f"{uuid.uuid4()}.txt"
-
+    converted_file, filename = transform.convert_to_text(file)
     try:
         s3_uri = upload_to_s3(file, filename)
         print("DEBUG: S3 URI =", s3_uri)

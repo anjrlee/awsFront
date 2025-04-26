@@ -3,3 +3,17 @@ flask==2.2.3
 flask-cors==3.0.10
 boto3==1.34.86
 
+# 📄 PDF 處理
+PyMuPDF==1.23.16
+pdf2image==1.17.0
+pillow==10.2.0
+
+# 📝 Office 文件
+python-docx==1.1.0
+python-pptx==0.6.21
+
+# 🔍 檔案格式判斷
+python-magic==0.4.27
+
+# 🧠 圖像 OCR
+pytesseract==0.3.10
