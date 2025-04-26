@@ -216,12 +216,24 @@ document.addEventListener('DOMContentLoaded', () => {
         addMessageToUI(content, isUser);
     }
 
+
+
+    function showThinkingProcess(){
+        
+    }
     // Function to show typing indicator
     function showTypingIndicator() {
         const indicator = document.createElement('div');
         indicator.className = 'message assistant';
         indicator.id = 'typing-indicator';
         
+        const container = document.createElement('div');
+        container.className = 'typing-container'; // 新增一層包住文字 + 點點
+    
+        const text = document.createElement('div');
+        text.className = 'typing-text';
+        text.textContent = '打字中...';
+    
         const indicatorContent = document.createElement('div');
         indicatorContent.className = 'typing-indicator';
         
@@ -230,10 +242,40 @@ document.addEventListener('DOMContentLoaded', () => {
             indicatorContent.appendChild(dot);
         }
         
-        indicator.appendChild(indicatorContent);
+        container.appendChild(text);             // 文字在上
+        container.appendChild(indicatorContent); // 點點在下
+        indicator.appendChild(container);
         chatMessages.appendChild(indicator);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        thinkgProcess=["Input Validation","Embedding Generation","Vector Database Search","Re-ranking","Response Generation","Output Verification"]
+        thinkginTime=[2,4,6,4,4]
+        // 創建 sleep 函數
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        // 使用 async 函數來實現動畫
+        async function animateText(text) {
+            
+            for(let i=0;i<thinkgProcess.length;i++){
+                text.textContent = thinkgProcess[i] ;
+                for (let j = 0; j < thinkginTime[i]; j++) {
+                    text.classList.add('hidden');
+                    await sleep(500);
+                    text.classList.remove('hidden');
+                    text.classList.add('flex');
+                    await sleep(1500);
+                }
+            }
+        }
+
+        // 調用函數
+        //const text = document.querySelector('.your-text-element'); // 替換成你的元素選擇器
+        animateText(text);
+
+      
+
+
     }
+    
 
     // Function to remove typing indicator
     function removeTypingIndicator() {
@@ -245,30 +287,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Function to send message to backend
     async function sendMessage(message) {
-        
-        try {
-            showTypingIndicator();
-            const response = await fetch('http://localhost:5000/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message }),
-            });
-            
+        let finished = false;
+    
+        showTypingIndicator();
+    
+        const sendPromise = fetch('http://localhost:5000/api/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message }),
+        })
+        .then(async (response) => {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-            
             const data = await response.json();
-            removeTypingIndicator();
             addMessage(data.response);
-        } catch (error) {
+        })
+        .catch((error) => {
             console.error('Error:', error);
-            removeTypingIndicator();
             addMessage('Sorry, there was an error processing your request. Please try again.');
-        }
+        })
+        .finally(() => {
+            finished = true;
+            removeTypingIndicator();
+        });
+       
     }
+    
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    function doSomethingWhileWaiting() {
+        console.log('Waiting for response...');
+        // 這裡可以加你想要等待時做的事情，例如小動畫
+    }
+    
 
     // Function to start a new chat
     function startNewChat() {
