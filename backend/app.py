@@ -7,20 +7,90 @@ from dotenv import load_dotenv
 
 # Load .env
 load_dotenv()
-AWS_REGION = os.getenv('AWS_REGION')
-FLOW_ID = os.getenv('FLOW_ID')
 
-# 初始化 Bedrock Agent Runtime client
-bedrock_runtime_client = boto3.client(
-    'bedrock-agent-runtime',
-    region_name=AWS_REGION
-)
+S3_BUCKET = os.getenv('S3_BUCKET_NAME')
+BEDROCK_KB_ID = os.getenv('BEDROCK_KB_ID')
+REGION = os.getenv('AWS_REGION')
+BEDROCK_DATASOURCE_ID = os.getenv('BEDROCK_DATASOURCE_ID')
+
 
 # Flask App init
 app = Flask(__name__)
 CORS(app)
 # Get AWS credentials from environment variables
 
+
+
+def upload_to_s3(file, filename):
+    s3 = boto3.client('s3', region_name=REGION)
+    s3.upload_fileobj(file, S3_BUCKET, filename)
+    return f's3://{S3_BUCKET}/{filename}'
+
+# 啟動知識庫 ingestion 任務
+def ingest_to_knowledge_base(s3_uri):
+    bedrock = boto3.client('bedrock-agent', region_name=REGION)
+    response = bedrock.start_ingestion_job(
+        knowledgeBaseId=BEDROCK_KB_ID,
+        dataSourceId=BEDROCK_DATASOURCE_ID
+    )
+    return response
+
+@app.route('/upload', methods=['POST'])
+def upload_txt_to_bedrock():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    filename = f"{uuid.uuid4()}.txt"
+
+    try:
+        s3_uri = upload_to_s3(file, filename)
+        print("DEBUG: S3 URI =", s3_uri)
+        
+        job_id = ingest_to_knowledge_base(s3_uri)
+        print("DEBUG: Ingestion Job ID =", job_id)
+
+        return jsonify({
+            'message': 'Upload successful',
+            's3_uri': s3_uri,
+            'ingestion_job_id': job_id
+        })
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({'error': 'Upload failed', 'detail': str(e)}), 500
+
+
+def clear_s3_bucket():
+    s3 = boto3.client('s3', region_name=REGION)
+    objects = s3.list_objects_v2(Bucket=S3_BUCKET)
+
+    if 'Contents' in objects:
+        delete_keys = [{'Key': obj['Key']} for obj in objects['Contents']]
+        s3.delete_objects(Bucket=S3_BUCKET, Delete={'Objects': delete_keys})
+        print("DEBUG: Deleted all objects from S3 bucket")
+        return len(delete_keys)
+    else:
+        print("DEBUG: S3 bucket already empty")
+        return 0
+
+
+@app.route('/clear-s3', methods=['POST'])
+def clear_s3():
+    try:
+        deleted_count = clear_s3_bucket()
+        # update kb
+        response = ingest_to_knowledge_base(None)
+        return jsonify({
+            'message': 'S3 bucket cleared',
+            'deleted_objects': deleted_count
+        })
+    except Exception as e:
+        print("ERROR in /clear-s3:", e)
+        return jsonify({'error': 'Failed to clear S3 bucket', 'detail': str(e)}), 500
 
 @app.route('/', methods=['GET'])
 def root():
