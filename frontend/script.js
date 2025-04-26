@@ -587,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     saveChats();
                     
                     // Send a message to the AI about the uploaded file
-                    sendMessage(`I've uploaded a ${fileExtension.toUpperCase()} file named "${fileName}". Please acknowledge.`);
+                    //sendMessage(`I've uploaded a ${fileExtension.toUpperCase()} file named "${fileName}". Please acknowledge.`);
                   
                     //if backend show message
                     // sendButton.disabled = false;
