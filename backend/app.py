@@ -237,15 +237,16 @@ def chat():
 
         )
 
-        #print("response",response)
+        print("response",response)
         event_stream = response['responseStream']
         output=""
-        #print(type(event_stream))
+        print(event_stream)
         
         for event in event_stream:
             output=event['flowOutputEvent']['content']['document']
-            break
-        output = json.loads(output)
+            print("output",event['flowOutputEvent'])
+            print('-'*10)
+        # output = json.loads(output)
         print(output)
         return jsonify({
             'response': output,

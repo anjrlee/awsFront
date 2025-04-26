@@ -70,13 +70,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
-            const response = await fetch('/api/deleteVectorDB', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify("new chat created"),
-            });
+            // const response = await fetch('/api/deleteVectorDB', {
+            //     method: 'POST',
+            //     headers: {
+            //         'Content-Type': 'application/json',
+            //     },
+            //     body: JSON.stringify("new chat created"),
+            // });
             
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
-        const sendPromise = fetch('http://34.222.241.141:5000/api/chat', {
+        const sendPromise = fetch('http://localhost:5000/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
