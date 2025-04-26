@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Make the script executable
-chmod +x /workspace/start.sh
+# chmod +x /workspace/start.sh
 
 # Check for .env file and source it if it exists
 if [ -f /.env ]; then
@@ -17,7 +17,7 @@ if [ "$1" = "test-env" ]; then
     echo "Running environment variable test..."
     cd backend
     pip install -r requirements.txt
-    python test_env.py
+    python3 test_env.py
     exit $?
 fi
 
@@ -33,7 +33,7 @@ cd ..
 # Start backend server in the background
 echo "Starting backend server..."
 cd backend
-python app.py &
+python3 app.py &
 BACKEND_PID=$!
 
 # Start frontend server in the background

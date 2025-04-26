@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
-            const response = await fetch('http://localhost:5000/api/deleteVectorDB', {
+            const response = await fetch('http://52.38.107.126:5000/api/deleteVectorDB', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
