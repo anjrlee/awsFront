@@ -4,6 +4,7 @@ import boto3
 import os
 import json
 from dotenv import load_dotenv
+import uuid
 
 # Load .env
 load_dotenv()
@@ -13,6 +14,12 @@ BEDROCK_KB_ID = os.getenv('BEDROCK_KB_ID')
 REGION = os.getenv('AWS_REGION')
 BEDROCK_DATASOURCE_ID = os.getenv('BEDROCK_DATASOURCE_ID')
 
+
+# 初始化 Bedrock Agent Runtime client
+bedrock_runtime_client = boto3.client(
+    'bedrock-agent-runtime',
+    region_name=REGION
+)
 
 # Flask App init
 app = Flask(__name__)
@@ -35,7 +42,7 @@ def ingest_to_knowledge_base(s3_uri):
     )
     return response
 
-@app.route('/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST'])
 def upload_txt_to_bedrock():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
@@ -78,7 +85,7 @@ def clear_s3_bucket():
         return 0
 
 
-@app.route('/clear-s3', methods=['POST'])
+@app.route('/api/deleteVectorDB', methods=['POST'])
 def clear_s3():
     try:
         deleted_count = clear_s3_bucket()
@@ -103,22 +110,8 @@ def root():
     })
 
 
-@app.route('/api/deleteVectorDB', methods=['POST'])
-def deleteVectorDB():
-    try:
-        data = request.json
-        vectorDBName = data.get('vectorDBName', '')
 
-        if not vectorDBName:
-            return jsonify({"error": "No vectorDBName provided"}), 400
 
-        # 測試硬編碼的回應
-        ai_response = "這是測試回應"
-        return jsonify({"response": ai_response})
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500<end_of_inser
 
 
 # @app.route('/api/chat', methods=['POST'])

@@ -436,9 +436,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Function to handle file uploads
-    function handleFileUpload(file) {
+    async function handleFileUpload(file) {
         if (!file) return;
-        
+        const formData = new FormData();
+        formData.append('file', file);
+        sendButton.disabled = true;
+        try {
+            await fetch('http://localhost:5000/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+        } catch (error) {
+            console.error('Failed to upload file:', error);
+        }
+        sendButton.disabled = false;
         // Check file extension
         const fileName = file.name;
         const fileExtension = fileName.split('.').pop().toLowerCase();
@@ -519,9 +530,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Send a message to the AI about the uploaded file
                     sendMessage(`I've uploaded a ${fileExtension.toUpperCase()} file named "${fileName}". Please acknowledge.`);
-                    sendButton.disabled = true;
-                    console.log("hello")
-                    sendButton.disabled = true;
+                  
                     //if backend show message
                     // sendButton.disabled = false;
 
