@@ -399,9 +399,9 @@ body {
 }
 
 .message-content {
-    padding: 10px 15px;
+    padding: 10px 30px;
     border-radius: 18px;
-    max-width: 70%;
+    max-width: 80%;
     word-wrap: break-word;
 }
 
