@@ -11,6 +11,12 @@ from PIL import Image
 from datetime import datetime
 import base64
 import markdown
+import re
+# Get AWS credentials from environment variables
+from datetime import datetime
+
+from PIL import Image
+from io import BytesIO
 
 # Load .env
 
@@ -55,10 +61,7 @@ bedrock_runtime_client = boto3.client(
 # Flask App init
 app = Flask(__name__)
 CORS(app)
-# Get AWS credentials from environment variables
-from datetime import datetime
-import matplotlib.pyplot as plt
-from PIL import Image
+
 
 
 def img2txt(encoded_image):
@@ -103,12 +106,25 @@ def img2txt(encoded_image):
     return extracted_text
 
 def draw_and_save(code_string):
-    timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
-    filename = "./img/img_" + timestamp  # 檔案名
-    save_code = f'plt.savefig("{filename}.png")\n'  # 使用 f-string 確保正確格式
-    exec(code_string + save_code)
-    img = Image.open(f"{filename}.png")
-    return img
+    try:
+        # 使用隔離的命名空間執行代碼，避免全局變量衝突
+        namespace = {}
+        exec(f"import matplotlib.pyplot as plt\nimport numpy as np\n{code_string}", namespace)
+        
+        # 將 matplotlib 圖保存到內存中的字節數據
+        buffer = BytesIO()
+        plt.savefig(buffer, format="png")
+        buffer.seek(0)
+        
+        # 將圖像轉換為 base64 編碼
+        encoded_image = base64.b64encode(buffer.getvalue()).decode("utf-8")
+        buffer.close()
+        
+        return encoded_image
+    except Exception as e:
+        print(f"Error in draw_and_save: {e}")
+        return None
+    
 
 
 
@@ -285,13 +301,37 @@ def getChatResponse12(user_input):
         output=event['flowOutputEvent']['content']['document']
         break
     print("output", output)
-    striped_output = output[0].strip('`').strip('json').strip()
-    json_output = json.loads(striped_output)
-    html_output = markdown.markdown(json_output['Answer'])
-    return jsonify({
-        'response': html_output,
-        'status': 'succeeded'
-    }), 200
+    # 移除 Markdown 格式的 ```json 區塊
+    # 使用正則表達式安全地移除開頭與結尾的區塊符號
+    striped_output = re.sub(r'^```json\s*|\s*```$', '', output[0].strip(), flags=re.DOTALL)
+
+    try:
+        json_output = json.loads(striped_output)
+        answer = json_output.get('Answer', '')
+        answer = answer.replace("//", "/")
+        html_output = markdown.markdown(answer)
+        if "Code_Block" in json_output:
+            code_block = json_output["Code_Block"]
+            try:
+                image_base64 = draw_and_save(code_block)
+                if image_base64:
+                    html_output += f'<br><img src="data:image/png;base64,{image_base64}" alt="Generated Image">'
+                else:
+                    html_output += "<br><p>Error generating image from code block.</p>"
+            except Exception as e:
+                print("Error generating image:", e)
+                html_output += "<br><p>Error generating image from code block.</p>"
+        return jsonify({
+            'response': html_output,
+            'status': 'succeeded'
+        }), 200
+    except json.JSONDecodeError as e:
+        print("JSON Decode Error:", e)
+        print("Failed content:", repr(striped_output))
+        return jsonify({
+            'error': 'Invalid JSON format in model response.',
+            'status': 'failed'
+        }), 500
 
 
 
@@ -356,10 +396,36 @@ def getChatResponse22(user_input):
         break
     print(output)
 
-    return jsonify({
-        'response': output,
-        'status': 'succeeded'
-    }), 200
+    # 移除 Markdown 格式的 ```json 區塊
+    # 使用正則表達式安全地移除開頭與結尾的區塊符號
+    striped_output = re.sub(r'^```json\s*|\s*```$', '', output[0].strip(), flags=re.DOTALL)
+
+    try:
+        json_output = json.loads(striped_output)
+        answer = json_output.get('Answer', '')
+        answer = answer.replace("//", "/")
+        html_output = markdown.markdown(answer)
+        if "Code_Block" in json_output:
+            code_block = json_output["Code_Block"]
+            try:
+                image = draw_and_save(code_block)
+                image_path = os.path.abspath(image.filename)
+                html_output += f'<br><img src="file://{image_path}" alt="Generated Image">'
+            except Exception as e:
+                print("Error generating image:", e)
+            html_output += "<br><p>Error generating image from code block.</p>"
+        return jsonify({
+            'response': html_output,
+            'status': 'succeeded'
+        }), 200
+    except json.JSONDecodeError as e:
+        print("JSON Decode Error:", e)
+        print("Failed content:", repr(striped_output))
+        return jsonify({
+            'error': 'Invalid JSON format in model response.',
+            'status': 'failed'
+        }), 500
+    
 
 
 @app.route('/api/chat', methods=['POST'])
