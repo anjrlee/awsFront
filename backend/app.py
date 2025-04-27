@@ -10,13 +10,15 @@ import numpy as np
 from PIL import Image
 from datetime import datetime
 import base64
-import markdown
+# import markdown
 import re
 # Get AWS credentials from environment variables
 from datetime import datetime
 
 from PIL import Image
 from io import BytesIO
+from markdown_it import MarkdownIt
+md = MarkdownIt()
 
 # Load .env
 
@@ -59,10 +61,9 @@ bedrock_runtime_client = boto3.client(
 )
 
 # Flask App init
+# Flask App init
 app = Flask(__name__)
-CORS(app)
-
-
+CORS(app, origins='*', supports_credentials=True)
 
 def img2txt(encoded_image):
     #response ="fake"
@@ -122,8 +123,7 @@ def draw_and_save(code_string):
         
         return encoded_image
     except Exception as e:
-        print(f"Error in draw_and_save: {e}")
-        return None
+        return ""
     
 
 
@@ -225,19 +225,24 @@ def root():
 #         return jsonify({"server error": str(e)}), 500
 
 def handleChatResponse(response):
-    output=""
-    print("output1",response)
-    for event in response['responseStream']:
-        output=event['flowOutputEvent']['content']['document']
-        break
-        #output = json.loads(output)
-    print("output=",output)
-   
-    return jsonify({
-        'response': output,
-        'status': 'Flow execution succeeded'
-    }), 200
-
+    try: 
+        output=""
+        print("output1",response)
+        for event in response['responseStream']:
+            output=event['flowOutputEvent']['content']['document']
+            break
+            #output = json.loads(output)
+        print("output=",output)
+    
+        return jsonify({
+            'response': output,
+            'status': 'Flow execution succeeded'
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'response': "I am sorry, I cannot answer your question.",
+            'status': 'Flow execution succeeded'
+        }), 200
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
@@ -269,58 +274,62 @@ def getChatResponse11(user_input):
 
 
 def getChatResponse12(user_input):
-    print("user_input",user_input)
-    obj = json.loads(user_input.strip('`').strip('json').strip())
-    print(obj)
-    if not obj['answerable']:
-        return jsonify({
-            'response': "請確認輸入格式/內容相關、正確",
-            'status': 'Flow execution succeeded'
-        }), 200
-    user_input = "".join(obj['answerable'])
-    print("user_input",user_input)
-    response = bedrock_runtime_client.invoke_flow(
-            flowIdentifier="NPUEQ646G3",        
-            flowAliasIdentifier="1VKEITWEXH",   
-            inputs = [
-                {
-                    "nodeName": "FlowInputNode",      
-                    "nodeOutputName": "document",        
-                    "content": {
-                        "document": user_input
-
-                    }
-                }
-            ]
-
-    )
-    print("response",response)
-    event_stream = response['responseStream']
     output=""
-    for event in event_stream:
-        output=event['flowOutputEvent']['content']['document']
-        break
-    print("output", output)
-    # 移除 Markdown 格式的 ```json 區塊
-    # 使用正則表達式安全地移除開頭與結尾的區塊符號
-    striped_output = re.sub(r'^```json\s*|\s*```$', '', output[0].strip(), flags=re.DOTALL)
+    try:
+        print("user_input",user_input)
+        obj = json.loads(user_input.strip('`').strip('json').strip())
+        print(obj)
+        if not obj['answerable']:
+            return jsonify({
+                'response': "請確認輸入格式/內容相關、正確",
+                'status': 'Flow execution succeeded'
+            }), 200
+        user_input = "".join(obj['answerable'])
+        print("user_input",user_input)
+        response = bedrock_runtime_client.invoke_flow(
+                flowIdentifier="NPUEQ646G3",        
+                flowAliasIdentifier="1VKEITWEXH",   
+                inputs = [
+                    {
+                        "nodeName": "FlowInputNode",      
+                        "nodeOutputName": "document",        
+                        "content": {
+                            "document": user_input
 
+                        }
+                    }
+                ]
+
+        )
+        print("response",response)
+        event_stream = response['responseStream']
+        
+        for event in event_stream:
+            output=event['flowOutputEvent']['content']['document']
+            break
+        print("output", output)
+        # 移除 Markdown 格式的 ```json 區塊
+        # 使用正則表達式安全地移除開頭與結尾的區塊符號
+        striped_output = re.sub(r'^```json\s*|\s*```$', '', output[0].strip(), flags=re.DOTALL)
+    except Exception as e:
+                return jsonify({
+            'response': output,
+            'status': 'succeeded'
+        }), 200
     try:
         json_output = json.loads(striped_output)
         answer = json_output.get('Answer', '')
         answer = answer.replace("//", "/")
-        html_output = markdown.markdown(answer)
+        html_output = md.render(answer)
         if "Code_Block" in json_output:
             code_block = json_output["Code_Block"]
             try:
                 image_base64 = draw_and_save(code_block)
                 if image_base64:
                     html_output += f'<br><img src="data:image/png;base64,{image_base64}" alt="Generated Image">'
-                else:
-                    html_output += "<br><p>Error generating image from code block.</p>"
+
             except Exception as e:
                 print("Error generating image:", e)
-                html_output += "<br><p>Error generating image from code block.</p>"
         return jsonify({
             'response': html_output,
             'status': 'succeeded'
@@ -329,9 +338,9 @@ def getChatResponse12(user_input):
         print("JSON Decode Error:", e)
         print("Failed content:", repr(striped_output))
         return jsonify({
-            'error': 'Invalid JSON format in model response.',
-            'status': 'failed'
-        }), 500
+            'response': output,
+            'status': 'succeeded'
+        }), 200
 
 
 
@@ -357,54 +366,60 @@ def getChatResponse21(user_input):
 
 
 def getChatResponse22(user_input):
-    print("user_input2",user_input)
-    obj = json.loads(user_input.strip('`').strip('json').strip())
-    print(obj)
-    if not obj['answerable']:
-        return jsonify({
-            'response': "請確認輸入格式/內容相關、正確",
-            'status': 'Flow execution succeeded'
-        }), 200
-    user_input = "".join(obj['answerable'])
-   
-    my_dict = {
-            "query":user_input,
-            "file_content":FILE
-    }
-    user_input=str(my_dict)
-    print("user_input",user_input)
-    response = bedrock_runtime_client.invoke_flow(
-            flowIdentifier="NPUEQ646G3",        
-            flowAliasIdentifier="1VKEITWEXH",   
-            inputs = [
-                {
-                    "nodeName": "FlowInputNode",      
-                    "nodeOutputName": "document",        
-                    "content": {
-                        "document": user_input
-
-                    }
-                }
-            ]
-
-    )
-    print("response",response)
-    event_stream = response['responseStream']
     output=""
-    for event in event_stream:
-        output=event['flowOutputEvent']['content']['document']
-        break
-    print(output)
+    try:
+        print("user_input2",user_input)
+        obj = json.loads(user_input.strip('`').strip('json').strip())
+        print(obj)
+        if not obj['answerable']:
+            return jsonify({
+                'response': "請確認輸入格式/內容相關、正確",
+                'status': 'Flow execution succeeded'
+            }), 200
+        user_input = "".join(obj['answerable'])
+    
+        my_dict = {
+                "query":user_input,
+                "file_content":FILE
+        }
+        user_input=str(my_dict)
+        print("user_input",user_input)
+        response = bedrock_runtime_client.invoke_flow(
+                flowIdentifier="NPUEQ646G3",        
+                flowAliasIdentifier="1VKEITWEXH",   
+                inputs = [
+                    {
+                        "nodeName": "FlowInputNode",      
+                        "nodeOutputName": "document",        
+                        "content": {
+                            "document": user_input
 
-    # 移除 Markdown 格式的 ```json 區塊
-    # 使用正則表達式安全地移除開頭與結尾的區塊符號
-    striped_output = re.sub(r'^```json\s*|\s*```$', '', output[0].strip(), flags=re.DOTALL)
+                        }
+                    }
+                ]
 
+        )
+        print("response",response)
+        event_stream = response['responseStream']
+        
+        for event in event_stream:
+            output=event['flowOutputEvent']['content']['document']
+            break
+        print(output)
+
+        # 移除 Markdown 格式的 ```json 區塊
+        # 使用正則表達式安全地移除開頭與結尾的區塊符號
+        striped_output = re.sub(r'^```json\s*|\s*```$', '', output[0].strip(), flags=re.DOTALL)
+    except Exception as e:
+        return jsonify({
+            'response': output,
+            'status': 'succeeded'
+        }), 200
     try:
         json_output = json.loads(striped_output)
         answer = json_output.get('Answer', '')
         answer = answer.replace("//", "/")
-        html_output = markdown.markdown(answer)
+        html_output = md.render(answer)
         if "Code_Block" in json_output:
             code_block = json_output["Code_Block"]
             try:
@@ -422,9 +437,9 @@ def getChatResponse22(user_input):
         print("JSON Decode Error:", e)
         print("Failed content:", repr(striped_output))
         return jsonify({
-            'error': 'Invalid JSON format in model response.',
-            'status': 'failed'
-        }), 500
+            'response': output,
+            'status': 'succeeded'
+        }), 200
     
 
 
