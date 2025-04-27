@@ -184,7 +184,14 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content';
-        messageContent.textContent = content;
+        // 修改：使用 innerHTML 替代 textContent
+        if (isUser) {
+            // 對於用户消息，仍然使用 textContent 以防止注入
+            messageContent.textContent = content;
+        } else {
+            // 對於 AI 回應，使用 innerHTML 來渲染 markdown 轉換後的 HTML
+            messageContent.innerHTML = content;
+        }
         
         messageDiv.appendChild(messageContent);
         chatMessages.appendChild(messageDiv);
