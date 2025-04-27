@@ -362,6 +362,44 @@ def getChatResponse22(user_input):
         'status': 'succeeded'
     }), 200
 
+def languageGenerate(message):
+    input_message = message + "。請分別將這句話精準地翻譯成英文、日文、中文，不要添加任何額外內容，回傳格式如下：\n\"英文\":\"XXX\", \"中文\":\"XXX\", \"日文\":\"XXX\""
+    
+    claude_input = {
+        "anthropic_version": "bedrock-2023-05-31",  # 必填參數
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": input_message  # Use direct text field instead of source
+                    }
+                    # You can add additional content items if needed
+                ]
+            }
+        ],
+        "max_tokens": 1024
+    }
+
+    response = client.invoke_model(
+        modelId="anthropic.claude-3-5-sonnet-20241022-v2:0",
+        body=json.dumps(claude_input),
+        contentType="application/json",
+        accept="application/json"
+    )
+    
+    response_body = json.loads(response["body"].read())
+    extracted_text = response_body["content"][0]["text"]
+    return extracted_text
+
+
+
+
+
+
+
+
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -373,6 +411,8 @@ def chat():
             return jsonify({"error": "Missing 'message' in request"}), 400
         #print("data=",user_message)
         #user_input = request.json.get('inputs')
+        user_input=languageGenerate(user_input)
+        print("user_input", user_input) 
         my_dict = {
             "query":user_input,
             "file_content":FILE
@@ -393,14 +433,15 @@ def chat():
             break
 
         print("output",output)
-
+        ret=""
         if FILE=="":
-            return getChatResponse12(output)
+            ret= getChatResponse12(output)
 
         else:
             #print("22")
-            return getChatResponse22(output)
+            ret= getChatResponse22(output)
             FILE=""
+        return ret
 
 
 
