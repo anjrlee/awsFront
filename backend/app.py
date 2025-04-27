@@ -80,7 +80,7 @@ def img2txt(encoded_image):
                     },
                     {
                         "type": "text",
-                        "text": "請幫我萃取這張圖中的所有文字，回傳純文字即可。",
+                        "text": "請幫我萃取這張圖中的所有文字，回傳markdown即可。",
                     }
                 ]
             }
@@ -139,6 +139,7 @@ def upload_txt_to_bedrock():
     #print(img2txt(encoded_image))
     global FILE 
     FILE=img2txt(encoded_image)
+    print("FILE:", FILE)
     return FILE
     #post img2txt(file)
 
