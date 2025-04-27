@@ -25,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fileInput = document.getElementById('file-input');
     const recordingIndicator = document.getElementById('recording-indicator');
     const stopRecordingBtn = document.getElementById('stop-recording');
+    const URL="http://localhost:5000"
+    //const URL="http://34.222.241.141:5000 "
 
     // Chat management
     let chats = [];
@@ -70,7 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
-            const response = await fetch(baseURL+'api/deleteVectorDB', {
+
+            const response = await fetch(URL+'/api/deleteVectorDB', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -291,7 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
-        const sendPromise = fetch(baseURL + 'api/chat', {
+
+        const sendPromise = fetch(URL+'/api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -498,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         sendButton.disabled = true;
         try {
-            await fetch(baseURL+'api/upload', {
+            await fetch(URL+'/api/upload', {
                 method: 'POST',
                 body: formData
             });
@@ -585,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     saveChats();
                     
                     // Send a message to the AI about the uploaded file
-                    sendMessage(`I've uploaded a ${fileExtension.toUpperCase()} file named "${fileName}". Please acknowledge.`);
+                    //sendMessage(`I've uploaded a ${fileExtension.toUpperCase()} file named "${fileName}". Please acknowledge.`);
                   
                     //if backend show message
                     // sendButton.disabled = false;

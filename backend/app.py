@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 from datetime import datetime
 import base64
-import json
+
 
 # Load .env
 
@@ -22,7 +22,7 @@ BEDROCK_KB_ID = os.getenv('BEDROCK_KB_ID')
 REGION = os.getenv('AWS_REGION')
 BEDROCK_DATASOURCE_ID = os.getenv('BEDROCK_DATASOURCE_ID')
 REGION = os.getenv('AWS_REGION')
-
+FILE="鋼種好吃"
 
 
 
@@ -62,7 +62,7 @@ from PIL import Image
 
 
 def img2txt(encoded_image):
-
+    #response ="fake"
     # Create Claude prompt
     claude_input = {
         "anthropic_version": "bedrock-2023-05-31",  # Add this required parameter
@@ -99,7 +99,7 @@ def img2txt(encoded_image):
     # Parse response
     response_body = json.loads(response["body"].read())
     extracted_text = response_body["content"][0]["text"]
-    #print("圖片中的文字：")
+    print("圖片中的文字：",extracted_text)
     return extracted_text
 
 def draw_and_save(code_string):
@@ -137,7 +137,9 @@ def upload_txt_to_bedrock():
     encoded_image = base64.b64encode(file_bytes).decode("utf-8")
     #print("succeed")
     #print(img2txt(encoded_image))
-    return img2txt(encoded_image)
+    global FILE 
+    FILE=img2txt(encoded_image)
+    return FILE
     #post img2txt(file)
 
 
@@ -206,28 +208,35 @@ def root():
 #         print(f"Error: {str(e)}")
 #         return jsonify({"server error": str(e)}), 500
 
+def handleChatResponse(response):
+    output=""
+    print("output1",response)
+    for event in response['responseStream']:
+        output=event['flowOutputEvent']['content']['document']
+        break
+        #output = json.loads(output)
+    print("output=",output)
+   
+    return jsonify({
+        'response': output,
+        'status': 'Flow execution succeeded'
+    }), 200
+
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     return jsonify({"status": "healthy"})
 
 
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    try:
-        data = request.json
-        user_input = data.get('message', '')
-        #print("data=",user_message)
-        #user_input = request.json.get('inputs')
-        if not user_input:
-            print("Missing 'inputs' in request")
-            return jsonify({"error": "Missing 'message' in request"}), 400
-        response = bedrock_runtime_client.invoke_flow(
-            flowIdentifier="IQJ5LIPWZU",        # Flow ID
-            flowAliasIdentifier="SSEL19PR33",   # ✅ 使用 alias ID，而非 alias 名稱
+
+def getChatResponse11(user_input):
+    response = bedrock_runtime_client.invoke_flow(
+            flowIdentifier="IQJ5LIPWZU",        
+            flowAliasIdentifier="SSEL19PR33",   
             inputs = [
                 {
-                    "nodeName": "FlowInputNode",       # FlowInput 節點固定是這個名稱
-                    "nodeOutputName": "document",         # ✅ 這才是你 FlowInput 的輸出名稱
+                    "nodeName": "FlowInputNode",      
+                    "nodeOutputName": "document",        
                     "content": {
                         "document": user_input
 
@@ -235,29 +244,138 @@ def chat():
                 }
             ]
 
-        )
+    )
+    print("response", response)
+    return response
+    
+
+
+
+
+def getChatResponse12(user_input):
+    print("user_input",user_input)
+    obj = json.loads(user_input.strip('`').strip('json').strip())
+    print(obj)
+    if not obj['answerable']:
+        return jsonify({
+            'response': "請確認輸入格式/內容相關、正確",
+            'status': 'Flow execution succeeded'
+        }), 200
+    user_input = "".join(obj['answerable'])
+    print("user_input",user_input)
+    response = bedrock_runtime_client.invoke_flow(
+            flowIdentifier="NPUEQ646G3",        
+            flowAliasIdentifier="1VKEITWEXH",   
+            inputs = [
+                {
+                    "nodeName": "FlowInputNode",      
+                    "nodeOutputName": "document",        
+                    "content": {
+                        "document": user_input
+
+                    }
+                }
+            ]
+
+    )
+    print("response",response)
+    event_stream = response['responseStream']
+    output=""
+    for event in event_stream:
+        output=event['flowOutputEvent']['content']['document']
+        break
+    print(output)
+    return jsonify({
+        'response': output,
+        'status': 'succeeded'
+    }), 200
+
+
+
+def getChatResponse21(user_input):
+    print("user_input1", user_input)
+    response = bedrock_runtime_client.invoke_flow(
+            flowIdentifier="2KRL9LSKYI",        
+            flowAliasIdentifier="V73PBHK8YF",   
+            inputs = [
+                {
+                    "nodeName": "FlowInputNode",      
+                    "nodeOutputName": "document",        
+                    "content": {
+                        "document": user_input
+
+                    }
+                }
+            ]
+
+    )
+    return response
+
+
+
+def getChatResponse22(user_input):
+    print("user_input",user_input)
+    response = bedrock_runtime_client.invoke_flow(
+            flowIdentifier="NPUEQ646G3",        
+            flowAliasIdentifier="SSEL19PR33",   
+            inputs = [
+                {
+                    "nodeName": "FlowInputNode",      
+                    "nodeOutputName": "document",        
+                    "content": {
+                        "document": user_input
+
+                    }
+                }
+            ]
+
+    )
+    print("response",response)
+    event_stream = response['responseStream']
+    output=""
+    # for event in event_stream:
+    #     output=event['flowOutputEvent']['content']['document']
+    #     break
+    # print(output)
+    return jsonify({
+        'response': output,
+        'status': 'succeeded'
+    }), 200
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+        global FILE 
+        data = request.json
+        user_input = data.get('message', '')
+        #print("data=",user_message)
+        #user_input = request.json.get('inputs')
+        my_dict = {
+            "query":user_input,
+            "file_content":FILE
+        }
+        processedInput=str(my_dict)
+        if not user_input:
+            print("Missing 'inputs' in request")
+            return jsonify({"error": "Missing 'message' in request"}), 400
+        if FILE=="":
+            response=getChatResponse11(processedInput)
+        else:
+            response=getChatResponse21(processedInput)
 
         #print("response",response)
         event_stream = response['responseStream']
         output=""
         #print(type(event_stream))
-        
         for event in event_stream:
             output=event['flowOutputEvent']['content']['document']
             break
-        output = json.loads(output)
+        #output = json.loads(output)
         print(output)
-        return jsonify({
-            'response': output,
-            'status': 'Flow execution succeeded'
-        }), 200
-
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        return jsonify({
-            'error': str(e),
-            'status': 'Failed to invoke Bedrock Flow'
-        }), 500
+        if FILE=="":
+            return getChatResponse12(output)
+        else:
+            return getChatResponse22(output)
+            FILE=""
 
 
 
