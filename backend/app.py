@@ -10,7 +10,7 @@ import numpy as np
 from PIL import Image
 from datetime import datetime
 import base64
-
+import markdown
 
 # Load .env
 
@@ -22,8 +22,8 @@ BEDROCK_KB_ID = os.getenv('BEDROCK_KB_ID')
 REGION = os.getenv('AWS_REGION')
 BEDROCK_DATASOURCE_ID = os.getenv('BEDROCK_DATASOURCE_ID')
 REGION = os.getenv('AWS_REGION')
-FILE="鋼種好吃"
-
+# FILE="鋼種好吃"
+FILE=""
 
 
 code_string = """
@@ -285,9 +285,12 @@ def getChatResponse12(user_input):
     for event in event_stream:
         output=event['flowOutputEvent']['content']['document']
         break
-    print(output)
+    print("output", output)
+    striped_output = output[0].strip('`').strip('json').strip()
+    json_output = json.loads(striped_output)
+    html_output = markdown.markdown(json_output['Answer'])
     return jsonify({
-        'response': output,
+        'response': html_output,
         'status': 'succeeded'
     }), 200
 
@@ -353,6 +356,7 @@ def getChatResponse22(user_input):
         output=event['flowOutputEvent']['content']['document']
         break
     print(output)
+
     return jsonify({
         'response': output,
         'status': 'succeeded'
@@ -387,11 +391,12 @@ def chat():
         for event in event_stream:
             output=event['flowOutputEvent']['content']['document']
             break
-        #output = json.loads(output)    
-        #print(output)
-        
+
+        print("output",output)
+
         if FILE=="":
             return getChatResponse12(output)
+
         else:
             #print("22")
             return getChatResponse22(output)
