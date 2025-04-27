@@ -314,10 +314,25 @@ def getChatResponse21(user_input):
 
 
 def getChatResponse22(user_input):
+    print("user_input2",user_input)
+    obj = json.loads(user_input.strip('`').strip('json').strip())
+    print(obj)
+    if not obj['answerable']:
+        return jsonify({
+            'response': "請確認輸入格式/內容相關、正確",
+            'status': 'Flow execution succeeded'
+        }), 200
+    user_input = "".join(obj['answerable'])
+   
+    my_dict = {
+            "query":user_input,
+            "file_content":FILE
+    }
+    user_input=str(my_dict)
     print("user_input",user_input)
     response = bedrock_runtime_client.invoke_flow(
             flowIdentifier="NPUEQ646G3",        
-            flowAliasIdentifier="SSEL19PR33",   
+            flowAliasIdentifier="1VKEITWEXH",   
             inputs = [
                 {
                     "nodeName": "FlowInputNode",      
@@ -333,20 +348,24 @@ def getChatResponse22(user_input):
     print("response",response)
     event_stream = response['responseStream']
     output=""
-    # for event in event_stream:
-    #     output=event['flowOutputEvent']['content']['document']
-    #     break
-    # print(output)
+    for event in event_stream:
+        output=event['flowOutputEvent']['content']['document']
+        break
+    print(output)
     return jsonify({
         'response': output,
         'status': 'succeeded'
     }), 200
+
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
         global FILE 
         data = request.json
         user_input = data.get('message', '')
+        if not user_input:
+            print("Missing 'inputs' in request")
+            return jsonify({"error": "Missing 'message' in request"}), 400
         #print("data=",user_message)
         #user_input = request.json.get('inputs')
         my_dict = {
@@ -354,9 +373,7 @@ def chat():
             "file_content":FILE
         }
         processedInput=str(my_dict)
-        if not user_input:
-            print("Missing 'inputs' in request")
-            return jsonify({"error": "Missing 'message' in request"}), 400
+
         if FILE=="":
             response=getChatResponse11(processedInput)
         else:
@@ -369,11 +386,13 @@ def chat():
         for event in event_stream:
             output=event['flowOutputEvent']['content']['document']
             break
-        #output = json.loads(output)
-        print(output)
+        #output = json.loads(output)    
+        #print(output)
+        
         if FILE=="":
             return getChatResponse12(output)
         else:
+            #print("22")
             return getChatResponse22(output)
             FILE=""
 
