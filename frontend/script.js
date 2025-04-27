@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Chat management
     let chats = [];
     let currentChatId = null;
-
+    let baseURL = 'http://34.222.241.141:5000/'
 
     // Initialize the app
     initializeApp();
@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
-            const response = await fetch('/api/deleteVectorDB', {
+            const response = await fetch(baseURL+'api/deleteVectorDB', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -291,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
-        const sendPromise = fetch('http://34.222.241.141:5000/api/chat', {
+        const sendPromise = fetch(baseURL + 'api/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -498,7 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         sendButton.disabled = true;
         try {
-            await fetch('http://localhost:5000/api/upload', {
+            await fetch(baseURL+'api/upload', {
                 method: 'POST',
                 body: formData
             });
