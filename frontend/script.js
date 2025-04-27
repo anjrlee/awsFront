@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Chat management
     let chats = [];
     let currentChatId = null;
-
+    let baseURL = 'http://34.222.241.141:5000/'
 
     // Initialize the app
     initializeApp();
@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             showTypingIndicator();
             
+
             const response = await fetch(URL+'/api/deleteVectorDB', {
                 method: 'POST',
                 headers: {
@@ -293,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
         showTypingIndicator();
     
+
         const sendPromise = fetch(URL+'/api/chat', {
             method: 'POST',
             headers: {
