@@ -11,6 +11,9 @@ from PIL import Image
 from datetime import datetime
 import base64
 import markdown
+from pdf2image import convert_from_path
+from pdf2image import convert_from_bytes
+import io
 
 # Load .env
 
@@ -61,11 +64,14 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 
-def img2txt(encoded_image):
+def img2txt(file_obj):
     #response ="fake"
     # Create Claude prompt
+    file_bytes = file_obj.read()
+    encoded_image = base64.b64encode(file_bytes).decode("utf-8")
+    
     claude_input = {
-        "anthropic_version": "bedrock-2023-05-31",  # Add this required parameter
+        "anthropic_version": "bedrock-2023-05-31",
         "messages": [
             {
                 "role": "user",
@@ -75,18 +81,19 @@ def img2txt(encoded_image):
                         "source": {
                             "type": "base64",
                             "media_type": "image/png",
-                            "data": encoded_image,
+                            "data": encoded_image,  # 注意這裡是 base64 編碼後的 PDF
                         }
                     },
                     {
                         "type": "text",
-                        "text": "請幫我萃取這張圖中的所有文字，回傳markdown即可。",
+                        "text": "請幫我萃取這份PDF中的所有文字，回傳markdown即可。",
                     }
                 ]
             }
-        ],
-        "max_tokens": 1024,
-    }
+            ],
+            "max_tokens": 1024,
+        }
+
 
     # Model ID depends on the version you enabled
     response = client.invoke_model(
@@ -101,6 +108,21 @@ def img2txt(encoded_image):
     extracted_text = response_body["content"][0]["text"]
     print("圖片中的文字：",extracted_text)
     return extracted_text
+
+
+import fitz  # PyMuPDF
+
+def pdf_to_input(file_obj):
+    pdf_bytes = file_obj.read()
+    file_obj.seek(0)
+
+    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    print("final_text",text)
+    return text
+
 
 def draw_and_save(code_string):
     timestamp = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -132,13 +154,25 @@ def upload_txt_to_bedrock():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
-    file = request.files['file']
-    file_bytes = file.read()
-    encoded_image = base64.b64encode(file_bytes).decode("utf-8")
+    file_obj = request.files['file']
+    
+    filename = file_obj.filename  # 取得上傳檔案的檔名
+    ext = os.path.splitext(filename)[1].lower()  # 取得副檔名（小寫）
+
+    if ext == '.pdf':
+        claude_input = pdf_to_input(file_obj)
+    elif ext in ['.png', '.jpg', '.jpeg']:
+        claude_input = img2txt(file_obj)
+    else:
+        raise ValueError(f"不支援的檔案格式: {ext}")
+
+    print("claude_input:", claude_input)
+    return claude_input
     #print("succeed")
     #print(img2txt(encoded_image))
     global FILE 
-    FILE=img2txt(encoded_image)
+    
+    FILE=img2txt(file)
     print("FILE:", FILE)
     return FILE
     #post img2txt(file)
